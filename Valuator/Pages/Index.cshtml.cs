@@ -30,8 +30,7 @@ namespace Valuator.Pages
             var id = Guid.NewGuid().ToString();
 
             var similarityKey = "SIMILARITY-" + id;
-            var similarity = GetSimilarity(text, id);
-            _redisStorage.Store(similarityKey, similarity.ToString());
+            _redisStorage.Store(similarityKey, GetSimilarity(text, id).ToString());
 
             var textKey = "TEXT-" + id;
             _redisStorage.Store(textKey, text);
