@@ -1,0 +1,3 @@
+﻿.idea
+nginx/
+!nginx/conf/nginx.conf
