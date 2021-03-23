@@ -2,7 +2,7 @@
 using System.Linq;
 using StackExchange.Redis;
 
-namespace Valuator
+namespace Common
 {
     public class RedisStorage : IRedisStorage
     {
@@ -34,6 +34,12 @@ namespace Valuator
             var keys = _connection.GetServer(Configs.REDIS_HOSTNAME, Configs.REDIS_PORT).Keys();
 
             return keys.Select(item => item.ToString()).ToList();
+        }
+        
+        public bool IsKeyExist(string key)
+        {
+            var db = _connection.GetDatabase();
+            return db.KeyExists(key);
         }
     }
 }

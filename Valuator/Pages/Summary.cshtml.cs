@@ -1,4 +1,5 @@
 ﻿using System;
+using Common;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
 
@@ -22,9 +23,19 @@ namespace Valuator.Pages
         public void OnGet(string id)
         {
             _logger.LogDebug(id);
-
-            Rank = Convert.ToDouble(_redisStorage.Load($"RANK-{id}"));
-            Similarity = Convert.ToDouble(_redisStorage.Load($"SIMILARITY-{id}"));
+            
+            var rankKey = "RANK-" + id;
+            
+            if (_redisStorage.IsKeyExist(rankKey))
+            {
+                Rank = Convert.ToDouble(_redisStorage.Load(rankKey));
+            }
+            else
+            {
+                _logger.LogWarning("RankKey {rankKey} doesn't exists", rankKey);
+            }
+            
+            Similarity = Convert.ToDouble(_redisStorage.Load("SIMILARITY-{id}"));
         }
     }
 }

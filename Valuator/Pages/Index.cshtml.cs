@@ -1,9 +1,13 @@
 ﻿using System;
-using System.Globalization;
 using System.Linq;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using Common;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
+using NATS.Client;
 
 namespace Valuator.Pages
 {
@@ -29,14 +33,12 @@ namespace Valuator.Pages
 
             var id = Guid.NewGuid().ToString();
 
-            var similarityKey = "SIMILARITY-" + id;
-            _redisStorage.Store(similarityKey, GetSimilarity(text, id).ToString());
+            _redisStorage.Store("SIMILARITY-" + id, GetSimilarity(text, id).ToString());
 
-            var textKey = "TEXT-" + id;
-            _redisStorage.Store(textKey, text);
+            _redisStorage.Store("TEXT-" + id, text);
 
-            var rankKey = "RANK-" + id;
-            _redisStorage.Store(rankKey, GetRank(text).ToString());
+            await CreateRankCalculator(id);
+            
             return Redirect($"summary?id={id}");
         }
         
@@ -48,11 +50,21 @@ namespace Valuator.Pages
                 item.Substring(0, 5) == "TEXT-" && _redisStorage.Load(item) == text) ? 1 : 0;
         }
 
-        private static double GetRank(string text)
+        private async Task CreateRankCalculator(string id)
         {
-            var notLetterCount = text.Count(ch => !char.IsLetter(ch));
-
-            return (double) notLetterCount / text.Length;
+            var tokenSource = new CancellationTokenSource();
+            var connectionFactory = new ConnectionFactory();
+            using (var connection = connectionFactory.CreateConnection())
+            { 
+                if(!tokenSource.IsCancellationRequested)
+                {
+                    byte[] data = Encoding.UTF8.GetBytes(id);
+                    connection.Publish("valuator.processing.rank", data);
+                    await Task.Delay(1000);
+                }
+                connection.Drain();
+                connection.Close();
+            }
         }
     }
 }
