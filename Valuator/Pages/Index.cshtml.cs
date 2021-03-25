@@ -24,10 +24,9 @@ namespace Valuator.Pages
 
         public void OnGet()
         {
-
         }
 
-        public IActionResult OnPost(string text)
+        public async Task<IActionResult> OnPost(string text)
         {
             if (string.IsNullOrEmpty(text)) Redirect("/");
 
@@ -38,16 +37,18 @@ namespace Valuator.Pages
             _redisStorage.Store("TEXT-" + id, text);
 
             await CreateRankCalculator(id);
-            
+
             return Redirect($"summary?id={id}");
         }
-        
+
         private int GetSimilarity(string text, string id)
         {
             var keys = _redisStorage.GetKeys();
 
-            return keys.Any(item => 
-                item.Substring(0, 5) == "TEXT-" && _redisStorage.Load(item) == text) ? 1 : 0;
+            return keys.Any(item =>
+                item.Substring(0, 5) == "TEXT-" && _redisStorage.Load(item) == text)
+                ? 1
+                : 0;
         }
 
         private async Task CreateRankCalculator(string id)
@@ -55,13 +56,14 @@ namespace Valuator.Pages
             var tokenSource = new CancellationTokenSource();
             var connectionFactory = new ConnectionFactory();
             using (var connection = connectionFactory.CreateConnection())
-            { 
-                if(!tokenSource.IsCancellationRequested)
+            {
+                if (!tokenSource.IsCancellationRequested)
                 {
-                    byte[] data = Encoding.UTF8.GetBytes(id);
+                    var data = Encoding.UTF8.GetBytes(id);
                     connection.Publish("valuator.processing.rank", data);
                     await Task.Delay(1000);
                 }
+
                 connection.Drain();
                 connection.Close();
             }

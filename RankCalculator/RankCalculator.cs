@@ -11,13 +11,13 @@ namespace RankCalculator
     {
         private readonly ILogger<RankCalculator> _logger;
         private readonly IConnection _connection;
-        private readonly IStorage _storage;
+        private readonly IRedisStorage _redisStorage;
 
-        public RankCalculator(ILogger<RankCalculator> logger, IStorage storage)
+        public RankCalculator(ILogger<RankCalculator> logger, IRedisStorage storage)
         {
             _logger = logger;
             _connection = new ConnectionFactory().CreateConnection();
-            _storage = storage;
+            _redisStorage = storage;
         }
 
         public void Run()
@@ -27,19 +27,19 @@ namespace RankCalculator
                 string id = Encoding.UTF8.GetString(args.Message.Data);
                 string textKey = "TEXT-" + id;
 
-                if (!_storage.IsKeyExist(textKey))
+                if (!_redisStorage.IsKeyExist(textKey))
                 {
                     _logger.LogWarning("Text key {textKey} doesn't exists", textKey);
                     return;
                 }
 
-                string text = _storage.Load(textKey);
+                string text = _redisStorage.Load(textKey);
                 string rankKey = "RANK-" + id;
                 string rank = CalculateRank(text).ToString();
 
                 _logger.LogDebug("Rank {rank} with key {rankKey} by text id {id}", rank, rankKey, id);
 
-                _storage.Store(rankKey, rank);
+                _redisStorage.Store(rankKey, rank);
             });
 
             subscription.Start();
