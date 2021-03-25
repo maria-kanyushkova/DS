@@ -25,13 +25,15 @@ namespace Valuator.Pages
             _logger.LogDebug(id);
 
             var rankKey = "RANK-" + id;
+            
+            Similarity = Convert.ToDouble(_redisStorage.Load("SIMILARITY-" + id));
+            _logger.LogWarning("SIMILARITY-{id}");
+            _logger.LogWarning(Similarity.ToString());
 
             if (_redisStorage.IsKeyExist(rankKey))
                 Rank = Convert.ToDouble(_redisStorage.Load(rankKey));
             else
                 _logger.LogWarning("RankKey {rankKey} doesn't exists", rankKey);
-
-            Similarity = Convert.ToDouble(_redisStorage.Load("SIMILARITY-{id}"));
         }
     }
 }

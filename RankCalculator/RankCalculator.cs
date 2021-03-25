@@ -24,8 +24,8 @@ namespace RankCalculator
         {
             var subscription = _connection.SubscribeAsync("valuator.processing.rank", "rank_calculator", (sender, args) =>
             {
-                string id = Encoding.UTF8.GetString(args.Message.Data);
-                string textKey = "TEXT-" + id;
+                var id = Encoding.UTF8.GetString(args.Message.Data);
+                var textKey = "TEXT-" + id;
 
                 if (!_redisStorage.IsKeyExist(textKey))
                 {
@@ -33,9 +33,9 @@ namespace RankCalculator
                     return;
                 }
 
-                string text = _redisStorage.Load(textKey);
-                string rankKey = "RANK-" + id;
-                string rank = CalculateRank(text).ToString();
+                var text = _redisStorage.Load(textKey);
+                var rankKey = "RANK-" + id;
+                var rank = CalculateRank(text).ToString();
 
                 _logger.LogDebug("Rank {rank} with key {rankKey} by text id {id}", rank, rankKey, id);
 
