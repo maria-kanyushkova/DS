@@ -12,6 +12,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\RedisHandlers\RedisHandlers.csproj" />
         <ProjectReference Include="..\Common\Common.csproj" />
     </ItemGroup>
 

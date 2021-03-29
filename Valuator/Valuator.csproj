@@ -5,11 +5,12 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="NATS.Client" Version="0.12.0" />
+        <PackageReference Include="NATS.Client" Version="0.12.0"/>
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Common\Common.csproj" />
+        <ProjectReference Include="..\RedisHandlers\RedisHandlers.csproj"/>
+        <ProjectReference Include="..\Common\Common.csproj"/>
     </ItemGroup>
 
 </Project>

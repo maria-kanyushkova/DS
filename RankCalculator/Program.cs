@@ -1,5 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
-using Common;
+using RedisHandlers;
 
 namespace RankCalculator
 {

@@ -4,6 +4,7 @@ using System;
 using System.Linq;
 using System.Text;
 using Common;
+using RedisHandlers;
 
 namespace RankCalculator
 {
@@ -22,10 +23,10 @@ namespace RankCalculator
 
         public void Run()
         {
-            var subscription = _connection.SubscribeAsync("valuator.processing.rank", "rank_calculator", (sender, args) =>
+            var subscription = _connection.SubscribeAsync(Const.BrokerRank, "rank_calculator", (sender, args) =>
             {
                 var id = Encoding.UTF8.GetString(args.Message.Data);
-                var textKey = "TEXT-" + id;
+                var textKey = Const.TextTitleKey + id;
 
                 if (!_redisStorage.IsKeyExist(textKey))
                 {
@@ -34,7 +35,7 @@ namespace RankCalculator
                 }
 
                 var text = _redisStorage.Load(textKey);
-                var rankKey = "RANK-" + id;
+                var rankKey = Const.RankTitleKey + id;
                 var rank = CalculateRank(text).ToString();
 
                 _logger.LogDebug("Rank {rank} with key {rankKey} by text id {id}", rank, rankKey, id);

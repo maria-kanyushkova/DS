@@ -2,7 +2,7 @@
 using System.Linq;
 using StackExchange.Redis;
 
-namespace Common
+namespace RedisHandlers
 {
     public class RedisStorage : IRedisStorage
     {

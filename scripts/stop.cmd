@@ -1,4 +1,5 @@
 taskkill /f /im valuator.exe
+taskkill /f /im rankCalculator.exe
 
-cd %~dp0..\nginx\
+cd ..\nginx
 nginx -s stop

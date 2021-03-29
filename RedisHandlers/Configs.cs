@@ -1,4 +1,4 @@
-﻿namespace Common
+﻿namespace RedisHandlers
 {
     public static class Configs
     {

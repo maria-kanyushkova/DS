@@ -4,6 +4,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Common;
+using RedisHandlers;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
@@ -32,9 +33,9 @@ namespace Valuator.Pages
 
             var id = Guid.NewGuid().ToString();
 
-            _redisStorage.Store("SIMILARITY-" + id, GetSimilarity(text, id).ToString());
+            _redisStorage.Store(Const.SimilarityTitleKey + id, GetSimilarity(text, id).ToString());
 
-            _redisStorage.Store("TEXT-" + id, text);
+            _redisStorage.Store(Const.TextTitleKey + id, text);
 
             await CreateRankCalculator(id);
 
@@ -46,7 +47,7 @@ namespace Valuator.Pages
             var keys = _redisStorage.GetKeys();
 
             return keys.Any(item =>
-                item.Substring(0, 5) == "TEXT-" && _redisStorage.Load(item) == text)
+                item.Substring(0, 5) == Const.TextTitleKey && _redisStorage.Load(item) == text)
                 ? 1
                 : 0;
         }
@@ -60,8 +61,7 @@ namespace Valuator.Pages
                 if (!tokenSource.IsCancellationRequested)
                 {
                     var data = Encoding.UTF8.GetBytes(id);
-                    connection.Publish("valuator.processing.rank", data);
-                    await Task.Delay(1000);
+                    connection.Publish(Const.BrokerRank, data);
                 }
 
                 connection.Drain();

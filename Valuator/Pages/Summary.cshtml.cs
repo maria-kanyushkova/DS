@@ -1,5 +1,6 @@
 ﻿using System;
 using Common;
+using RedisHandlers;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
 
@@ -24,11 +25,9 @@ namespace Valuator.Pages
         {
             _logger.LogDebug(id);
 
-            var rankKey = "RANK-" + id;
-            
-            Similarity = Convert.ToDouble(_redisStorage.Load("SIMILARITY-" + id));
-            _logger.LogWarning("SIMILARITY-{id}");
-            _logger.LogWarning(Similarity.ToString());
+            var rankKey = Const.RankTitleKey + id;
+
+            Similarity = Convert.ToDouble(_redisStorage.Load(Const.SimilarityTitleKey + id));
 
             if (_redisStorage.IsKeyExist(rankKey))
                 Rank = Convert.ToDouble(_redisStorage.Load(rankKey));
