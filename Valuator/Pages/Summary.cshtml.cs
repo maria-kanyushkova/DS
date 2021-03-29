@@ -12,10 +12,10 @@ namespace Valuator.Pages
         private readonly IRedisStorage _redisStorage;
 
 
-        public SummaryModel(ILogger<SummaryModel> logger, IRedisStorage storage)
+        public SummaryModel(ILogger<SummaryModel> logger, IRedisStorage redisStorage)
         {
             _logger = logger;
-            _redisStorage = storage;
+            _redisStorage = redisStorage;
         }
 
         public double Rank { get; set; }

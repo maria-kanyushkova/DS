@@ -32,11 +32,12 @@ namespace Valuator.Pages
             if (string.IsNullOrEmpty(text)) Redirect("/");
 
             var id = Guid.NewGuid().ToString();
+            var similarity = GetSimilarity(text, id);
 
-            _redisStorage.Store(Const.SimilarityTitleKey + id, GetSimilarity(text, id).ToString());
-
+            _redisStorage.Store(Const.SimilarityTitleKey + id, similarity.ToString());
             _redisStorage.Store(Const.TextTitleKey + id, text);
 
+            await CreateEventForSimilarity(id, similarity);
             await CreateRankCalculator(id);
 
             return Redirect($"summary?id={id}");
@@ -63,6 +64,20 @@ namespace Valuator.Pages
                     var data = Encoding.UTF8.GetBytes(id);
                     connection.Publish(Const.BrokerRank, data);
                 }
+
+                connection.Drain();
+                connection.Close();
+            }
+        }
+
+        private async Task CreateEventForSimilarity(string id, int similarity)
+        {
+            string message = $"Event: SimilarityCalculated, context id: {id}, similarity: {similarity}";
+            ConnectionFactory connectionFactory = new ConnectionFactory();
+            using (var connection = connectionFactory.CreateConnection())
+            {
+                byte[] data = Encoding.UTF8.GetBytes(message);
+                connection.Publish(Const.BrokerSimilarity, data);
 
                 connection.Drain();
                 connection.Close();
