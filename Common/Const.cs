@@ -7,5 +7,6 @@
         public const string SimilarityTitleKey = "SIMILARITY-";
         
         public const string BrokerRank = "rancCalculated.process";
+        public const string BrokerSimilarity = "similarityCalculated.process";
     }
 }
