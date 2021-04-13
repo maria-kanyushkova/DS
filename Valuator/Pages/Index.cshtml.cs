@@ -62,7 +62,7 @@ namespace Valuator.Pages
                 if (!tokenSource.IsCancellationRequested)
                 {
                     var data = Encoding.UTF8.GetBytes(id);
-                    connection.Publish(Const.BrokerRank, data);
+                    connection.Publish(Const.RankProcess, data);
                 }
 
                 connection.Drain();

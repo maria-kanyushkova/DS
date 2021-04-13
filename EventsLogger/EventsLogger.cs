@@ -10,6 +10,7 @@ namespace EventsLogger
     {
         private ILogger _logger;
         private readonly IConnection _connection;
+        private IAsyncSubscription _subscription;
 
         public EventsLogger(ILogger<EventsLogger> logger)
         {
@@ -19,23 +20,24 @@ namespace EventsLogger
 
         public void Run()
         {
-            var subscription = _connection.SubscribeAsync(Const.BrokerRank, (sender, args) =>
+            _subscription = _connection.SubscribeAsync(Const.BrokerRank, (sender, args) =>
             {
                 string message = Encoding.UTF8.GetString(args.Message.Data);
                 _logger.LogDebug(message);
             });
 
-            subscription = _connection.SubscribeAsync(Const.BrokerSimilarity, (sender, args) =>
+            _subscription = _connection.SubscribeAsync(Const.BrokerSimilarity, (sender, args) =>
             {
                 string message = Encoding.UTF8.GetString(args.Message.Data);
                 _logger.LogDebug(message);
             });
 
-            subscription.Start();
+            _subscription.Start();
 
+            Console.WriteLine("Press Enter to exit (EventsLogger)");
             Console.ReadLine();
 
-            subscription.Unsubscribe();
+            _subscription.Unsubscribe();
 
             _connection.Drain();
             _connection.Close();

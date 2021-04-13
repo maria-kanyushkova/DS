@@ -13,6 +13,7 @@ namespace RankCalculator
         private readonly ILogger<RankCalculator> _logger;
         private readonly IConnection _connection;
         private readonly IRedisStorage _redisStorage;
+        private IAsyncSubscription _subscription;
 
         public RankCalculator(ILogger<RankCalculator> logger, IRedisStorage storage)
         {
@@ -23,7 +24,7 @@ namespace RankCalculator
 
         public void Run()
         {
-            var subscription = _connection.SubscribeAsync(Const.BrokerRank, "rank_calculator", (sender, args) =>
+            _subscription = _connection.SubscribeAsync(Const.RankProcess, "rank_calculator", (sender, args) =>
             {
                 var id = Encoding.UTF8.GetString(args.Message.Data);
                 var textKey = Const.TextTitleKey + id;
@@ -38,17 +39,18 @@ namespace RankCalculator
                 var rankKey = Const.RankTitleKey + id;
                 var rank = CalculateRank(text).ToString();
 
-                _logger.LogDebug("Rank {rank} with key {rankKey} by text id {id}", rank, rankKey, id);
-
                 _redisStorage.Store(rankKey, rank);
+                
+                string message = $"Event: RankCalculated, context id: {id}, rank: {rank}";
+                _connection.Publish(Const.BrokerRank, Encoding.UTF8.GetBytes(message));
             });
 
-            subscription.Start();
+            _subscription.Start();
 
-            Console.WriteLine("Press Enter to exit");
+            Console.WriteLine("Press Enter to exit (RankCalculator)");
             Console.ReadLine();
 
-            subscription.Unsubscribe();
+            _subscription.Unsubscribe();
 
             _connection.Drain();
             _connection.Close();
