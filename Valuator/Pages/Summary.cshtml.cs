@@ -23,16 +23,17 @@ namespace Valuator.Pages
 
         public void OnGet(string id)
         {
-            _logger.LogDebug(id);
+            var shard = _redisStorage.LoadShard(id);
+            _logger.LogDebug($"{shard} : {id} - SummaryGet");
 
             var rankKey = Const.RankTitleKey + id;
 
-            Similarity = Convert.ToDouble(_redisStorage.Load(Const.SimilarityTitleKey + id));
+            Similarity = Convert.ToDouble(_redisStorage.Load(Const.SimilarityTitleKey + id, shard));
 
-            if (_redisStorage.IsKeyExist(rankKey))
-                Rank = Convert.ToDouble(_redisStorage.Load(rankKey));
+            if (_redisStorage.IsKeyExist(rankKey, shard))
+                Rank = Convert.ToDouble(_redisStorage.Load(rankKey, shard));
             else
-                _logger.LogWarning("RankKey {rankKey} doesn't exists", rankKey);
+                _logger.LogWarning($"RankKey {rankKey} doesn't exists in [{shard}]");
         }
     }
 }

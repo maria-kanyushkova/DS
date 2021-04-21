@@ -4,6 +4,8 @@ using System;
 using System.Linq;
 using System.Text;
 using Common;
+using Microsoft.Extensions.Logging;
+using NATS.Client;
 using RedisHandlers;
 
 namespace RankCalculator
@@ -27,21 +29,23 @@ namespace RankCalculator
             _subscription = _connection.SubscribeAsync(Const.RankProcess, "rank_calculator", (sender, args) =>
             {
                 var id = Encoding.UTF8.GetString(args.Message.Data);
+                var shard = _redisStorage.LoadShard(id);
                 var textKey = Const.TextTitleKey + id;
 
-                if (!_redisStorage.IsKeyExist(textKey))
+                if (!_redisStorage.IsKeyExist(textKey, shard))
                 {
                     _logger.LogWarning("Text key {textKey} doesn't exists", textKey);
                     return;
                 }
 
-                var text = _redisStorage.Load(textKey);
-                var rankKey = Const.RankTitleKey + id;
+                var text = _redisStorage.Load(textKey, shard);
                 var rank = CalculateRank(text).ToString();
 
-                _redisStorage.Store(rankKey, rank);
-                
-                string message = $"Event: RankCalculated, context id: {id}, rank: {rank}";
+                _logger.LogInformation("Shard: " + shard + ", id: " + id + ", text: " + text + ", rank: " + rank);
+
+                _redisStorage.Store(Const.RankTitleKey + id, rank, shard);
+
+                var message = $"Event: RankCalculated, context id: {id}, rank: {rank}";
                 _connection.Publish(Const.BrokerRank, Encoding.UTF8.GetBytes(message));
             });
 
@@ -59,7 +63,7 @@ namespace RankCalculator
         private static double CalculateRank(string text)
         {
             var notLettersCount = text.Count(ch => !char.IsLetter(ch));
-            return (double)notLettersCount / text.Length;
+            return (double) notLettersCount / text.Length;
         }
     }
 }

@@ -27,15 +27,17 @@ namespace Valuator.Pages
         {
         }
 
-        public async Task<IActionResult> OnPost(string text)
+        public async Task<IActionResult> OnPost(string text, string segment)
         {
+            _logger.LogDebug(text);
             if (string.IsNullOrEmpty(text)) Redirect("/");
 
             var id = Guid.NewGuid().ToString();
+            _logger.LogInformation($"{segment} : {id} - OnPost");
             var similarity = GetSimilarity(text, id);
 
-            _redisStorage.Store(Const.SimilarityTitleKey + id, similarity.ToString());
-            _redisStorage.Store(Const.TextTitleKey + id, text);
+            _redisStorage.Store(Const.SimilarityTitleKey + id, similarity.ToString(), segment);
+            _redisStorage.Store(Const.TextTitleKey + id, text, segment);
 
             await CreateEventForSimilarity(id, similarity);
             await CreateRankCalculator(id);
@@ -43,14 +45,9 @@ namespace Valuator.Pages
             return Redirect($"summary?id={id}");
         }
 
-        private int GetSimilarity(string text, string id)
+        private int GetSimilarity(string value, string id)
         {
-            var keys = _redisStorage.GetKeys();
-
-            return keys.Any(item =>
-                item.Substring(0, 5) == Const.TextTitleKey && _redisStorage.Load(item) == text)
-                ? 1
-                : 0;
+            return _redisStorage.HasValueDuplicates(value) ? 1 : 0;
         }
 
         private async Task CreateRankCalculator(string id)

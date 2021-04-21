@@ -5,7 +5,7 @@ namespace RankCalculator
 {
     public class Program
     {
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
             using (var loggerFactory =
                 LoggerFactory.Create(builder => builder.AddConsole().SetMinimumLevel(LogLevel.Debug)))
