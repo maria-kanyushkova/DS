@@ -3,3 +3,5 @@ nginx/
 !nginx/conf/nginx.conf
 /*/obj
 /*/bin
+/*/*/obj
+/*/*/bin
