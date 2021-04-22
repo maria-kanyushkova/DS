@@ -36,6 +36,7 @@ namespace Valuator.Pages
             _logger.LogInformation($"{segment} : {id} - OnPost");
             var similarity = GetSimilarity(text, id);
 
+            _redisStorage.StoreShard(id, segment);
             _redisStorage.Store(Const.SimilarityTitleKey + id, similarity.ToString(), segment);
             _redisStorage.Store(Const.TextTitleKey + id, text, segment);
 

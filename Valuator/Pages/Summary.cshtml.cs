@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using Common;
 using RedisHandlers;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -29,11 +30,17 @@ namespace Valuator.Pages
             var rankKey = Const.RankTitleKey + id;
 
             Similarity = Convert.ToDouble(_redisStorage.Load(Const.SimilarityTitleKey + id, shard));
-
-            if (_redisStorage.IsKeyExist(rankKey, shard))
-                Rank = Convert.ToDouble(_redisStorage.Load(rankKey, shard));
-            else
-                _logger.LogWarning($"RankKey {rankKey} doesn't exists in [{shard}]");
+            
+            for (int retryCount = 0; retryCount < 100; retryCount++)
+            {
+                Thread.Sleep(10);
+                if (_redisStorage.IsKeyExist(rankKey, shard))
+                {
+                    Rank = Convert.ToDouble(_redisStorage.Load(rankKey, shard));
+                    return;
+                }
+            }
+            _logger.LogWarning($"RankKey {rankKey} doesn't exists in [{shard}]");
         }
     }
 }
