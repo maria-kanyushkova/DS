@@ -1,4 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Net;
+using System.Net.Sockets;
+using System.Text;
+using System.Text.Json;
 
 namespace Server
 {
@@ -8,15 +13,12 @@ namespace Server
         public static void StartListening(int port)
         {
             // Привязываем сокет ко всем интерфейсам на текущей машинe
-            IPAddress ipAddress = IPAddress.Any;
+            var ipAddress = IPAddress.Any;
 
-            IPEndPoint localEndPoint = new IPEndPoint(ipAddress, port);
+            var localEndPoint = new IPEndPoint(ipAddress, port);
 
             // CREATE
-            Socket listener = new Socket(
-                ipAddress.AddressFamily,
-                SocketType.Stream,
-                ProtocolType.Tcp);
+            var listener = new Socket(ipAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
 
             try
             {
@@ -28,21 +30,23 @@ namespace Server
 
                 while (true)
                 {
+                    Console.WriteLine("Ожидание соединения клиента...");
                     // ACCEPT
-                    Socket handler = listener.Accept();
-
-                    byte[] buf = new byte[1024];
+                    var handler = listener.Accept();
+                    
+                    Console.WriteLine("Получение данных...");
+                    var buf = new byte[1024];
 
                     // RECEIVE
-                    int bytesRec = handler.Receive(buf);
-                    string data = Encoding.UTF8.GetString(buf, 0, bytesRec);
+                    var bytesRec = handler.Receive(buf);
+                    var data = Encoding.UTF8.GetString(buf, 0, bytesRec);
 
                     _history.Add(data);
-                    Console.WriteLine("Message received: {0}", data);
+                    Console.WriteLine("Полученный текст: {0}", data);
 
                     // Отправляем текст обратно клиенту
-                    var jsonString = JsonSerializer.Serialize(_history);
-                    byte[] msg = Encoding.UTF8.GetBytes(jsonString);
+                    var historyJson = JsonSerializer.Serialize(_history);
+                    var msg = Encoding.UTF8.GetBytes(historyJson);
 
                     // SEND
                     handler.Send(msg);
@@ -65,7 +69,11 @@ namespace Server
         }
         static void Main(string[] args)
         {
+            Console.WriteLine("Запуск сервера...");
             StartListening(Int32.Parse(args[0]));
+
+            Console.WriteLine("\nНажмите ENTER чтобы выйти...");
+            Console.Read();
         }
     }
 }
