@@ -6,123 +6,139 @@ using System.Threading;
 
 namespace Chain
 {
-    class Program
+    internal class Program
     {
+        private static Socket _receiver;
         private static Socket _sender;
-        private static Socket _listener;
-        private static int x;
+
         static void Main(string[] args)
         {
-            var listenPort = Int32.Parse(args[0]);
-            var address = args[1];
-            var port = Int32.Parse(args[2]);
-            bool isFirst = args.Length == 4 && args[3] == "true";
+            var listeningPort = Int32.Parse(args[0]);
+            var nextHost = args[1];
+            var nextPort = Int32.Parse(args[2]);
+            var isInit = false;
 
-            CreateConnection(listenPort, address, port);
-
-            x = Convert.ToInt32(Console.ReadLine());
-
-            if (isFirst)
+            if (args.Length >= 4)
             {
-                WorkAsInitiator();
-            }
-            else
-            {
-                WorkAsNormalProcess();
+                isInit = bool.Parse(args[3]);
             }
 
-            _sender.Shutdown(SocketShutdown.Both);
-            _sender.Close();
-
+            Start(listeningPort, nextHost, nextPort, isInit);
         }
-        private static void CreateConnection(int listenPort, string address, int port)
+
+        public static void Start(int listeningPort, string nextHost, int nextPort, bool isInit)
         {
-            IPAddress listenIpAddress = IPAddress.Any;
-            IPEndPoint localEP = new IPEndPoint(listenIpAddress, listenPort);
-            _listener = new Socket(
-                 listenIpAddress.AddressFamily,
-                 SocketType.Stream,
-                 ProtocolType.Tcp);
-
-            _listener.Bind(localEP);
-            _listener.Listen(10);
-
-            IPAddress ipAddress = address == "localhost" ? IPAddress.Loopback : IPAddress.Parse(address);
-            IPEndPoint remoteEP = new IPEndPoint(ipAddress, port);
-            _sender = new Socket(
-                ipAddress.AddressFamily,
-                SocketType.Stream,
-                ProtocolType.Tcp);
-
-            Connect(remoteEP);
-        }
-        private static void Connect(IPEndPoint remoteEP)
-        {
-            bool isConnect = false;
-            for (int i = 0; i < 3 && !isConnect; ++i)
+            try
             {
+                var prevIpAddress = IPAddress.Any;
+                var nextIpAddress = (nextHost == "localhost") ? IPAddress.Loopback : IPAddress.Parse(nextHost);
+
+                var prevEp = new IPEndPoint(prevIpAddress, listeningPort);
+                var nextEp = new IPEndPoint(nextIpAddress, nextPort);
+
+                _sender = new Socket(nextIpAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+                _receiver = new Socket(prevIpAddress.AddressFamily, SocketType.Stream,ProtocolType.Tcp);
+
                 try
                 {
-                    _sender.Connect(remoteEP);
-                    isConnect = true;
+                    _receiver.Bind(prevEp);
+                    _receiver.Listen(10);
+
+                    Connect(nextEp);
+
+                    var number = Console.ReadLine();
+                    var x = Convert.ToInt32(number);
+
+                    var listenerHandler = _receiver.Accept();
+                    
+                    if (isInit)
+                        WorkAsInitiator(listenerHandler, x);
+                    else
+                        WorkAsProcess(listenerHandler, x);
+                    
+                    listenerHandler.Shutdown(SocketShutdown.Both);
+                    listenerHandler.Close();
+
+                    _sender.Shutdown(SocketShutdown.Both);
+                    _sender.Close();
                 }
-                catch (Exception)
+                catch (ArgumentNullException ane)
                 {
-                    Thread.Sleep(500);
+                    Console.WriteLine("ArgumentNullException : {0}", ane.ToString());
+                }
+                catch (SocketException se)
+                {
+                    Console.WriteLine("SocketException : {0}", se.ToString());
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("Unexpected exception : {0}", e.ToString());
                 }
             }
-            if (!isConnect)
+            catch (Exception e)
             {
-                Console.WriteLine("Cannot connect to next process");
-                return;
+                Console.WriteLine(e.ToString());
             }
         }
-        private static void WorkAsInitiator()
+        
+        private static void WorkAsInitiator(Socket listenerHandler, int x)
         {
-            var bytes = BitConverter.GetBytes(x);
-            _sender.Send(bytes);
+            var msg = Encoding.UTF8.GetBytes(x.ToString());
+            var bytesSent = _sender.Send(msg);
 
-            Socket handler = _listener.Accept();
-
-            //receive max from all
-            byte[] buf = new byte[4];
-            int bytesRec = handler.Receive(buf);
-            int y = BitConverter.ToInt32(buf);
+            var buf = new byte[1024];
+            var bytesRec = listenerHandler.Receive(buf);
+            var data = Encoding.UTF8.GetString(buf, 0, bytesRec);
+            var y = Int32.Parse(data);
 
             x = y;
-            Console.WriteLine(x);
 
-            //send max from all to next
-            bytes = BitConverter.GetBytes(Math.Max(x, y));
-            int bytesSent = _sender.Send(bytes);
+            msg = Encoding.UTF8.GetBytes(x.ToString());
+            bytesSent = _sender.Send(msg);
 
-            handler.Shutdown(SocketShutdown.Both);
-            handler.Close();
+            buf = new byte[1024];
+            bytesRec = listenerHandler.Receive(buf);
+            data = Encoding.UTF8.GetString(buf, 0, bytesRec);
+            x = Int32.Parse(data);
+
+            Console.Write(x);
         }
-        private static void WorkAsNormalProcess()
+
+        private static void WorkAsProcess(Socket listenerHandler, int x)
         {
-            Socket handler = _listener.Accept();
+            var buf = new byte[1024];
+            var bytesRec = listenerHandler.Receive(buf);
+            var data = Encoding.UTF8.GetString(buf, 0, bytesRec);
+            var y = Int32.Parse(data);
 
-            //receive from previous
-            byte[] buf = new byte[4];
-            int bytesRec = handler.Receive(buf);
-            int y = BitConverter.ToInt32(buf);
+            var maxOfXandY = Math.Max(x, y);
 
-            //send max from two to next
-            var bytes = BitConverter.GetBytes(Math.Max(x, y));
-            int bytesSent = _sender.Send(bytes);
+            var msg = Encoding.UTF8.GetBytes(maxOfXandY.ToString());
+            var bytesSent = _sender.Send(msg);
+            
+            buf = new byte[1024];
+            bytesRec = listenerHandler.Receive(buf);
+            data = Encoding.UTF8.GetString(buf, 0, bytesRec);
+            x = Int32.Parse(data);
 
-            //receive max from all
-            buf = new byte[4];
-            bytesRec = handler.Receive(buf);
-            int receivedNumber = BitConverter.ToInt32(buf);
-            Console.WriteLine(receivedNumber);
+            msg = Encoding.UTF8.GetBytes(x.ToString());
+            bytesSent = _sender.Send(msg);
 
-            //send max from all to next
-            _sender.Send(buf);
-
-            handler.Shutdown(SocketShutdown.Both);
-            handler.Close();
+            Console.Write(x);
+        }
+        
+        private static void Connect(IPEndPoint remoteEp)
+        {
+            while (true)
+                try
+                {
+                    _sender.Connect(remoteEp);
+                    break;
+                }
+                catch
+                {
+                    Thread.Sleep(1000);
+                }
         }
     }
 }
