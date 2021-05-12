@@ -83,23 +83,19 @@ namespace Chain
         
         private static void WorkAsInitiator(Socket listenerHandler, int x)
         {
-            var msg = Encoding.UTF8.GetBytes(x.ToString());
-            var bytesSent = _sender.Send(msg);
+            _sender.Send(BitConverter.GetBytes(x));
 
             var buf = new byte[1024];
-            var bytesRec = listenerHandler.Receive(buf);
-            var data = Encoding.UTF8.GetString(buf, 0, bytesRec);
-            var y = Int32.Parse(data);
+            listenerHandler.Receive(buf);
+            var y = BitConverter.ToInt32(buf);
 
             x = y;
 
-            msg = Encoding.UTF8.GetBytes(x.ToString());
-            bytesSent = _sender.Send(msg);
+            _sender.Send(BitConverter.GetBytes(x));
 
             buf = new byte[1024];
-            bytesRec = listenerHandler.Receive(buf);
-            data = Encoding.UTF8.GetString(buf, 0, bytesRec);
-            x = Int32.Parse(data);
+            listenerHandler.Receive(buf);
+            x = BitConverter.ToInt32(buf);
 
             Console.Write(x);
         }
@@ -107,22 +103,16 @@ namespace Chain
         private static void WorkAsProcess(Socket listenerHandler, int x)
         {
             var buf = new byte[1024];
-            var bytesRec = listenerHandler.Receive(buf);
-            var data = Encoding.UTF8.GetString(buf, 0, bytesRec);
-            var y = Int32.Parse(data);
+            listenerHandler.Receive(buf);
+            var y = BitConverter.ToInt32(buf);
 
-            var maxOfXandY = Math.Max(x, y);
-
-            var msg = Encoding.UTF8.GetBytes(maxOfXandY.ToString());
-            var bytesSent = _sender.Send(msg);
+            _sender.Send(BitConverter.GetBytes(Math.Max(x, y)));
             
             buf = new byte[1024];
-            bytesRec = listenerHandler.Receive(buf);
-            data = Encoding.UTF8.GetString(buf, 0, bytesRec);
-            x = Int32.Parse(data);
+            listenerHandler.Receive(buf);
+            x = BitConverter.ToInt32(buf);
 
-            msg = Encoding.UTF8.GetBytes(x.ToString());
-            bytesSent = _sender.Send(msg);
+            _sender.Send(BitConverter.GetBytes(x));
 
             Console.Write(x);
         }
