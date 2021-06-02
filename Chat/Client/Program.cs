@@ -29,14 +29,15 @@ namespace Client
                     var msgBytes = Encoding.UTF8.GetBytes(message);
                     
                     // SEND
-                    var bytesSent = sender.Send(msgBytes);
+                    sender.Send(BitConverter.GetBytes(msgBytes.Length).Concat(msgBytes).ToArray());
 
                     // RECEIVE
-                    var buf = new byte[1024];
-                    var bytesRec = sender.Receive(buf);
-                    var historyMessage = Encoding.UTF8.GetString(buf, 0, bytesRec);
-                    var history = JsonSerializer.Deserialize<List<string>>(historyMessage);
-
+                    var lenBuf = new byte[sizeof(int)];
+                    sender.Receive(lenBuf);
+                    var buf = new byte[BitConverter.ToInt32(lenBuf)];
+                    var data = Encoding.UTF8.GetString(buf, 0, sender.Receive(buf));
+                    
+                    var history = JsonSerializer.Deserialize<List<string>>(data);
                     foreach (var msg in history) Console.WriteLine(msg);
 
                     // RELEASE

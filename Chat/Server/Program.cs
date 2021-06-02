@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -35,21 +36,22 @@ namespace Server
                     var handler = listener.Accept();
                     
                     Console.WriteLine("Получение данных...");
-                    var buf = new byte[1024];
-
+                    var lenBuf = new byte[sizeof(int)];
+                    
                     // RECEIVE
-                    var bytesRec = handler.Receive(buf);
-                    var data = Encoding.UTF8.GetString(buf, 0, bytesRec);
+                    handler.Receive(lenBuf);
+                    var buf = new byte[BitConverter.ToInt32(lenBuf)];
+                    var data = Encoding.UTF8.GetString(buf, 0, handler.Receive(buf));
 
                     _history.Add(data);
-                    Console.WriteLine("Полученный текст: {0}", data);
+                    Console.WriteLine($"Полученный текст: {data}", data);
 
                     // Отправляем текст обратно клиенту
                     var historyJson = JsonSerializer.Serialize(_history);
-                    var msg = Encoding.UTF8.GetBytes(historyJson);
+                    var historyData = Encoding.UTF8.GetBytes(historyJson);
 
                     // SEND
-                    handler.Send(msg);
+                    handler.Send(BitConverter.GetBytes(historyData.Length).Concat(historyData).ToArray());
 
                     // RELEASE
                     handler.Shutdown(SocketShutdown.Both);
